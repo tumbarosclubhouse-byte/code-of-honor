@@ -182,6 +182,7 @@ OCTOBER 1 — OCTOBER 31
 function MainApp({ user }) {
 const [profiles, setProfiles] = useState([]);
 const [todayCompletions, setTodayCompletions] = useState([]);
+  const [todayContent, setTodayContent] = useState(null);
   const [workoutOpen, setWorkoutOpen] = useState(false);
 const [currentSet, setCurrentSet] = useState(1);
 const [resting, setResting] = useState(false);
@@ -192,6 +193,7 @@ const [savingWorkout, setSavingWorkout] = useState(false);
 
 useEffect(() => {
 loadGroup();
+loadTodayContent();
 resumeWorkout();
 }, []);
 useEffect(() => {
@@ -261,6 +263,24 @@ rest_until: null,
 });
 }
 }
+};
+  const loadTodayContent = async () => {
+const today = new Date().toLocaleDateString("en-CA", {
+timeZone: "America/New_York",
+});
+
+const { data, error } = await supabase
+.from("daily_content")
+.select("*")
+.eq("challenge_date", today)
+.maybeSingle();
+
+if (error) {
+console.error("Could not load today's content:", error);
+return;
+}
+
+setTodayContent(data);
 };
 const loadGroup = async () => {
 const { data: profileData } = await supabase
@@ -611,10 +631,22 @@ return (
 
 <main>
 <section className="day-heading">
-<p className="eyebrow">DAY 1 • OCTOBER 1</p>
-<h1>Show up.</h1>
+<p className="eyebrow">
+{todayContent
+? `DAY ${todayContent.day_number} • OCTOBER ${todayContent.day_number}`
+: "CODE OF HONOR"}
+</p>
+
+<h1>
+{todayContent
+? `Day ${todayContent.day_number}.`
+: "The challenge begins October 1."}
+</h1>
+
 <p className="quote">
-“You don't have to feel ready. You just have to begin.”
+{todayContent
+? `“${todayContent.quote}”`
+: "Prepare yourself. October 1 — October 31."}
 </p>
 </section>
 
