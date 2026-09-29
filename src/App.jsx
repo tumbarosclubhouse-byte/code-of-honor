@@ -1210,7 +1210,15 @@ const complete = completedToday(profile.id);
 return (
 <div className="member" key={profile.id}>
 <div className="avatar">
-{profile.display_name?.charAt(0)?.toUpperCase() || "?"}
+{profile.avatar_url ? (
+<img
+src={profile.avatar_url}
+alt={profile.display_name || "Member"}
+className="member-avatar-image"
+/>
+) : (
+profile.display_name?.charAt(0)?.toUpperCase() || "?"
+)}
 </div>
 
 <div className="member-info">
