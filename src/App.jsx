@@ -650,39 +650,90 @@ const signOut = async () => {
 await supabase.auth.signOut();
 };
 const getMemberStreak = (profileId) => {
-const days = groupCompletions
+const completedDates = new Set(
+groupCompletions
 .filter(
 (item) =>
 item.user_id === profileId &&
 item.workout_complete === true
 )
 .map((item) => item.completion_date)
-.filter(Boolean)
-.sort();
-
-if (days.length === 0) return 0;
-
-const uniqueDays = [...new Set(days)];
-
-let streak = 1;
-
-for (let i = uniqueDays.length - 1; i > 0; i--) {
-const current = new Date(`${uniqueDays[i]}T12:00:00`);
-const previous = new Date(`${uniqueDays[i - 1]}T12:00:00`);
-
-const difference = Math.round(
-(current - previous) / (1000 * 60 * 60 * 24)
 );
 
-if (difference === 1) {
-streak += 1;
-} else {
-break;
+if (completedDates.size === 0) return 0;
+
+const todayString = new Date().toLocaleDateString("en-CA", {
+timeZone: "America/New_York",
+});
+
+// No official streaks before October 1.
+if (todayString < "2026-10-01") return 0;
+
+let cursor = new Date(`${todayString}T12:00:00`);
+const todayComplete = completedDates.has(todayString);
+
+// During the day, not completing today's workout yet
+// should NOT destroy yesterday's existing streak.
+if (!todayComplete) {
+cursor.setDate(cursor.getDate() - 1);
 }
+
+let streak = 0;
+
+while (true) {
+const year = cursor.getFullYear();
+const month = String(cursor.getMonth() + 1).padStart(2, "0");
+const day = String(cursor.getDate()).padStart(2, "0");
+const dateString = `${year}-${month}-${day}`;
+
+if (dateString < "2026-10-01") break;
+if (!completedDates.has(dateString)) break;
+
+streak += 1;
+cursor.setDate(cursor.getDate() - 1);
 }
 
 return streak;
 };
+  const getTodayCompletion = (profileId) => {
+return todayCompletions.find(
+(item) =>
+item.user_id === profileId &&
+item.workout_complete === true
+);
+};
+
+const rankedProfiles = [...profiles].sort((a, b) => {
+const streakA = getMemberStreak(a.id);
+const streakB = getMemberStreak(b.id);
+
+// Longest streak always ranks first.
+if (streakB !== streakA) {
+return streakB - streakA;
+}
+
+// If streaks are tied, someone who completed today
+// ranks above someone who has not.
+const completionA = getTodayCompletion(a.id);
+const completionB = getTodayCompletion(b.id);
+
+if (completionA && !completionB) return -1;
+if (!completionA && completionB) return 1;
+
+// If both completed today, most recent completion ranks first.
+if (completionA && completionB) {
+const timeA = new Date(completionA.completed_at || 0).getTime();
+const timeB = new Date(completionB.completed_at || 0).getTime();
+
+return timeB - timeA;
+}
+
+// Stable fallback.
+return (a.display_name || "").localeCompare(
+b.display_name || ""
+);
+});
+
 const completedToday = (profileId) =>
 todayCompletions.some(
 (item) =>
@@ -1264,7 +1315,7 @@ onClick={startWorkout}
 <span>{profiles.length} MEMBERS</span>
 </div>
 
-{profiles.map((profile) => {
+{rankedProfiles.map((profile) => {
 const complete = completedToday(profile.id);
   const streak = getMemberStreak(profile.id);
 
@@ -1293,10 +1344,19 @@ profile.display_name?.charAt(0)?.toUpperCase() || "?"
 
 <div
 className={`member-today-status ${
-complete ? "done" : "not-done"
+!todayContent
+? "not-done"
+: complete
+? "done"
+: "not-done"
 }`}
 >
-{complete ? (
+{!todayContent ? (
+<>
+<Circle size={18} />
+<span>STARTS OCT 1</span>
+</>
+) : complete ? (
 <>
 <CheckCircle2 size={18} />
 <span>COMPLETE</span>
