@@ -748,11 +748,12 @@ todayCompletions.some(
 (item) =>
 item.user_id === profileId && item.workout_complete === true
 );
+  const myWorkoutComplete = completedToday(user.id);
+
   if (activePage === "profile") {
 const completedDays = myCompletions.filter(
 (item) => item.workout_complete === true
 );
-const myWorkoutComplete = completedToday(user.id);
 const daysCompleted = completedDays.length;
 const totalPushups = daysCompleted * 150;
 const buildersCompleted = builderCompletions.length;
