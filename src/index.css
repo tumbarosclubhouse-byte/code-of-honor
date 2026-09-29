@@ -1370,3 +1370,10 @@ stroke: #d2b374;
 .member-today-status.not-done svg {
 stroke: #5d615c;
 }
+.workout-done-button {
+background: rgba(185, 154, 100, 0.16);
+border: 1px solid #b99a64;
+color: #d2b374;
+cursor: default;
+opacity: 1;
+}
