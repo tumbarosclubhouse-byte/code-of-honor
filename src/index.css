@@ -1325,3 +1325,48 @@ object-fit: cover;
 object-position: center;
 border-radius: 50%;
 }
+/* GROUP ACCOUNTABILITY */
+
+.member-info {
+min-width: 0;
+flex: 1;
+}
+
+.member-streak {
+margin-top: 7px;
+color: #b99a64;
+font-size: 7px;
+font-weight: 900;
+letter-spacing: 1.2px;
+}
+
+.member-today-status {
+flex-shrink: 0;
+display: flex;
+align-items: center;
+gap: 6px;
+margin-left: 12px;
+font-size: 7px;
+font-weight: 900;
+letter-spacing: 1.2px;
+}
+
+.member-today-status.done {
+color: #d2b374;
+}
+
+.member-today-status.not-done {
+color: #666a65;
+}
+
+.member-today-status svg {
+flex-shrink: 0;
+}
+
+.member-today-status.done svg {
+stroke: #d2b374;
+}
+
+.member-today-status.not-done svg {
+stroke: #5d615c;
+}
