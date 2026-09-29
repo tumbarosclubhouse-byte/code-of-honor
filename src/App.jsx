@@ -507,11 +507,9 @@ return (
 </section>
 
 <section className="challenge-card">
-<div className="challenge-icon">
-<Dumbbell size={24} />
-</div>
 
-<p className="eyebrow">TODAY'S CHALLENGE</p>
+
+<p className="eyebrow">THERE IS NO TOMORROW</p>
 
 <div className="big-number">150</div>
 <div className="pushups">PUSHUPS</div>
