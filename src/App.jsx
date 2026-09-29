@@ -194,11 +194,14 @@ const [savingWorkout, setSavingWorkout] = useState(false);
 const [builders, setBuilders] = useState([]);
 const [builderCompletions, setBuilderCompletions] = useState([]);
 const [openBuilder, setOpenBuilder] = useState(null);
+  const [myProfile, setMyProfile] = useState(null);
+const [myCompletions, setMyCompletions] = useState([]);
 
 useEffect(() => {
 loadGroup();
 loadTodayContent();
   loadBuilders();
+  loadProfileData();
 resumeWorkout();
 }, []);
 useEffect(() => {
@@ -310,6 +313,35 @@ return;
 
 setBuilders(builderData || []);
 setBuilderCompletions(completionData || []);
+};
+  const loadProfileData = async () => {
+const { data: profileData, error: profileError } = await supabase
+.from("profiles")
+.select("*")
+.eq("id", user.id)
+.maybeSingle();
+
+if (profileError) {
+console.error("Could not load profile:", profileError);
+} else {
+setMyProfile(profileData);
+}
+
+const { data: completionData, error: completionError } =
+await supabase
+.from("daily_completions")
+.select("*")
+.eq("user_id", user.id)
+.order("completion_date", { ascending: true });
+
+if (completionError) {
+console.error(
+"Could not load completion history:",
+completionError
+);
+} else {
+setMyCompletions(completionData || []);
+}
 };
 const loadGroup = async () => {
 const { data: profileData } = await supabase
@@ -461,6 +493,7 @@ setWorkoutStartedAt(null);
 setSavingWorkout(false);
 
 await loadGroup();
+  await loadProfileData();
 
 setWorkoutSuccess(true);
 };
@@ -520,6 +553,196 @@ todayCompletions.some(
 (item) =>
 item.user_id === profileId && item.workout_complete === true
 );
+  if (activePage === "profile") {
+const completedDays = myCompletions.filter(
+(item) => item.workout_complete === true
+);
+
+const daysCompleted = completedDays.length;
+const totalPushups = daysCompleted * 150;
+const buildersCompleted = builderCompletions.length;
+
+const completedDayNumbers = completedDays
+.map((item) => {
+const parts = item.completion_date?.split("-");
+return parts ? Number(parts[2]) : null;
+})
+.filter(Boolean);
+
+const sortedDays = [...completedDayNumbers].sort((a, b) => a - b);
+
+let currentStreak = 0;
+
+for (let i = sortedDays.length - 1; i >= 0; i--) {
+if (
+i === sortedDays.length - 1 ||
+sortedDays[i] === sortedDays[i + 1] - 1
+) {
+currentStreak += 1;
+} else {
+break;
+}
+}
+
+const now = new Date();
+
+const newYorkToday = new Date(
+now.toLocaleString("en-US", {
+timeZone: "America/New_York",
+})
+);
+
+let daysRemaining = 31;
+
+if (
+newYorkToday.getFullYear() === 2026 &&
+newYorkToday.getMonth() === 9
+) {
+daysRemaining = Math.max(0, 31 - newYorkToday.getDate());
+} else if (
+newYorkToday > new Date("2026-10-31T23:59:59")
+) {
+daysRemaining = 0;
+}
+
+return (
+<div className="profile-screen">
+<header className="profile-header">
+<div className="brand-mark">
+<Shield size={22} />
+</div>
+
+<div>
+<div className="brand">CODE OF HONOR</div>
+<div className="challenge-label">OCTOBER CHALLENGE</div>
+</div>
+</header>
+
+<main className="profile-main">
+<section className="profile-identity">
+<div className="profile-avatar">
+{myProfile?.display_name
+?.charAt(0)
+?.toUpperCase() || "?"}
+</div>
+
+<h1>{myProfile?.display_name || "MEMBER"}</h1>
+
+<p>
+@{myProfile?.username || "codeofhonor"}
+</p>
+</section>
+
+<section className="profile-progress">
+<p className="eyebrow">OCTOBER PROGRESS</p>
+
+<div className="profile-stat-grid">
+<div>
+<strong>{daysCompleted}</strong>
+<span>/ 31 DAYS</span>
+</div>
+
+<div>
+<strong>{totalPushups.toLocaleString()}</strong>
+<span>PUSHUPS</span>
+</div>
+
+<div>
+<strong>{buildersCompleted}</strong>
+<span>/ 16 BUILDERS</span>
+</div>
+</div>
+</section>
+
+<section className="calendar-section">
+<div className="profile-section-heading">
+<h2>OCTOBER</h2>
+<span>31 DAYS</span>
+</div>
+
+<div className="october-grid">
+{Array.from({ length: 31 }, (_, index) => {
+const day = index + 1;
+const complete =
+completedDayNumbers.includes(day);
+
+return (
+<div
+className={`calendar-day ${
+complete ? "complete" : ""
+}`}
+key={day}
+>
+<span>
+{String(day).padStart(2, "0")}
+</span>
+
+<strong>
+{complete ? "✓" : ""}
+</strong>
+</div>
+);
+})}
+</div>
+</section>
+
+<section className="code-stats">
+<p className="eyebrow">THE CODE</p>
+
+<div className="code-stat-row">
+<span>CURRENT STREAK</span>
+<strong>
+{currentStreak} {currentStreak === 1 ? "DAY" : "DAYS"}
+</strong>
+</div>
+
+<div className="code-stat-row">
+<span>PUSHUPS COMPLETED</span>
+<strong>{totalPushups.toLocaleString()}</strong>
+</div>
+
+<div className="code-stat-row">
+<span>BUILDERS COMPLETED</span>
+<strong>{buildersCompleted} / 16</strong>
+</div>
+
+<div className="code-stat-row">
+<span>DAYS REMAINING</span>
+<strong>{daysRemaining}</strong>
+</div>
+</section>
+
+<button
+className="profile-signout"
+onClick={signOut}
+>
+SIGN OUT
+</button>
+
+<p className="profile-motto">
+DISCIPLINE BUILDS FREEDOM
+</p>
+</main>
+
+<nav className="bottom-nav">
+<button onClick={() => setActivePage("today")}>
+<Flame size={21} />
+TODAY
+</button>
+
+<button onClick={() => setActivePage("challenge")}>
+<Shield size={21} />
+CHALLENGE
+</button>
+
+<button className="nav-active">
+<Circle size={21} />
+PROFILE
+</button>
+</nav>
+</div>
+);
+}
   if (activePage === "challenge") {
 const completedCount = builderCompletions.length;
 const progressPercent = (completedCount / 16) * 100;
@@ -651,7 +874,7 @@ TODAY
 CHALLENGE
 </button>
 
-<button>
+<button onClick={() => setActivePage("profile")}>
 <Circle size={21} />
 PROFILE
 </button>
@@ -932,7 +1155,7 @@ TODAY
 CHALLENGE
 </button>
 
-<button>
+<button onClick={() => setActivePage("profile")}>
 <Circle size={21} />
 PROFILE
 </button>
