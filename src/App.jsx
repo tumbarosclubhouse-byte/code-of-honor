@@ -191,6 +191,7 @@ const [restSeconds, setRestSeconds] = useState(300);
 const [workoutStartedAt, setWorkoutStartedAt] = useState(null);
 const [savingWorkout, setSavingWorkout] = useState(false);
   const [workoutSuccess, setWorkoutSuccess] = useState(false);
+  const [finaleSuccess, setFinaleSuccess]= useState(false);
   const [activePage, setActivePage] = useState("today");
 const [builders, setBuilders] = useState([]);
 const [builderCompletions, setBuilderCompletions] = useState([]);
@@ -549,7 +550,15 @@ setSavingWorkout(false);
 await loadGroup();
   await loadProfileData();
 
+const completionDay = new Date().toLocaleDateString("en-CA", {
+timeZone: "America/New_York",
+});
+
+if (completionDay === "2026-10-31") {
+setFinaleSuccess(true);
+} else {
 setWorkoutSuccess(true);
+}
 };
 
 const formatTime = (seconds) => {
@@ -1304,6 +1313,82 @@ CHALLENGE
 PROFILE
 </button>
 </nav>
+</div>
+);
+}
+  if (finaleSuccess) {
+return (
+<div className="finale-screen">
+<div className="finale-content">
+<div className="finale-shield">
+<Shield size={30} />
+</div>
+
+<p className="finale-eyebrow">CODE OF HONOR</p>
+
+<h1>THE STANDARD REMAINS.</h1>
+
+<p className="finale-quote">
+“The challenge ends today. The standard doesn't.”
+</p>
+
+<div className="finale-total">
+<strong>4,650</strong>
+<span>PUSHUPS COMPLETED</span>
+</div>
+
+<div className="finale-stats">
+<div>
+<strong>31</strong>
+<span>DAYS</span>
+</div>
+
+<div>
+<strong>{builderCompletions.length}/16</strong>
+<span>BUILDERS</span>
+</div>
+
+<div>
+<strong>ONE</strong>
+<span>CODE</span>
+</div>
+</div>
+
+<div className="finale-message">
+<p>YOU KEPT YOUR WORD.</p>
+
+<strong>
+{builderCompletions.length === 16
+? "CODE OF HONOR COMPLETE"
+: "31-DAY WORKOUT COMPLETE"}
+</strong>
+
+{builderCompletions.length < 16 && (
+<span className="finale-builders-note">
+{16 - builderCompletions.length}{" "}
+{16 - builderCompletions.length === 1 ? "BUILDER" : "BUILDERS"} REMAIN
+</span>
+)}
+</div>
+
+<button
+className="finale-button"
+onClick={() => {
+setFinaleSuccess(false);
+setWorkoutOpen(false);
+}}
+>
+RETURN HOME
+</button>
+
+<p className="finale-date">
+OCTOBER 1 — OCTOBER 31, 2026
+</p>
+
+<p className="finale-motto">
+DISCIPLINE BUILDS FREEDOM
+</p>
+</div>
 </div>
 );
 }
