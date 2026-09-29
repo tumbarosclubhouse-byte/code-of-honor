@@ -188,6 +188,7 @@ const [resting, setResting] = useState(false);
 const [restSeconds, setRestSeconds] = useState(300);
 const [workoutStartedAt, setWorkoutStartedAt] = useState(null);
 const [savingWorkout, setSavingWorkout] = useState(false);
+  const [workoutSuccess, setWorkoutSuccess] = useState(false);
 
 useEffect(() => {
 loadGroup();
@@ -292,7 +293,6 @@ setSavingWorkout(false);
 return;
 }
 
-setWorkoutOpen(false);
 setResting(false);
 setCurrentSet(1);
 setRestSeconds(300);
@@ -300,6 +300,8 @@ setWorkoutStartedAt(null);
 setSavingWorkout(false);
 
 await loadGroup();
+
+setWorkoutSuccess(true);
 };
 
 const formatTime = (seconds) => {
@@ -319,6 +321,61 @@ todayCompletions.some(
 (item) =>
 item.user_id === profileId && item.workout_complete === true
 );
+  if (workoutSuccess) {
+return (
+<div className="success-screen">
+<div className="success-content">
+<div className="success-check">✓</div>
+
+<p className="success-eyebrow">
+DAY COMPLETE
+</p>
+
+<div className="success-number">
+150
+<span>/150</span>
+</div>
+
+<h1>CHALLENGE COMPLETE</h1>
+
+<p className="success-quote">
+“You kept your word today.”
+</p>
+
+<div className="success-stats">
+<div>
+<strong>3</strong>
+<span>SETS</span>
+</div>
+
+<div>
+<strong>150</strong>
+<span>PUSHUPS</span>
+</div>
+
+<div>
+<strong>✓</strong>
+<span>DAY COMPLETE</span>
+</div>
+</div>
+
+<button
+className="success-button"
+onClick={() => {
+setWorkoutSuccess(false);
+setWorkoutOpen(false);
+}}
+>
+RETURN HOME
+</button>
+
+<p className="success-motto">
+DISCIPLINE BUILDS FREEDOM
+</p>
+</div>
+</div>
+);
+}
 if (workoutOpen) {
 return (
 <div className="workout-screen">
