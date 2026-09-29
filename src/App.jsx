@@ -1061,14 +1061,30 @@ setEditingBio(true);
 <div className="october-grid">
 {Array.from({ length: 31 }, (_, index) => {
 const day = index + 1;
-const complete =
-completedDayNumbers.includes(day);
+const complete = completedDayNumbers.includes(day);
+
+const todayString = new Date().toLocaleDateString("en-CA", {
+timeZone: "America/New_York",
+});
+
+const challengeDate = `2026-10-${String(day).padStart(2, "0")}`;
+
+let dayStatus = "future";
+
+if (complete) {
+dayStatus = "complete";
+} else if (challengeDate === todayString) {
+dayStatus = "today";
+} else if (
+challengeDate < todayString &&
+challengeDate >= "2026-10-01"
+) {
+dayStatus = "missed";
+}
 
 return (
 <div
-className={`calendar-day ${
-complete ? "complete" : ""
-}`}
+className={`calendar-day ${dayStatus}`}
 key={day}
 >
 <span>
@@ -1076,7 +1092,13 @@ key={day}
 </span>
 
 <strong>
-{complete ? "✓" : ""}
+{dayStatus === "complete"
+? "✓"
+: dayStatus === "missed"
+? "—"
+: dayStatus === "today"
+? "○"
+: ""}
 </strong>
 </div>
 );
