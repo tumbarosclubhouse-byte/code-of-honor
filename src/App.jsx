@@ -778,6 +778,11 @@ todayCompletions.some(
 item.user_id === profileId && item.workout_complete === true
 );
   const myWorkoutComplete = completedToday(user.id);
+  const totalMembers = profiles.length;
+
+const completedTodayCount = profiles.filter((profile) =>
+completedToday(profile.id)
+).length;
 
   if (viewingProfile) {
 const memberDays = groupCompletions.filter(
@@ -1530,10 +1535,34 @@ disabled={myWorkoutComplete}
 
 
 <section className="group-section">
-<div className="section-title">
+<div className="group-header">
 <h2>THE GROUP</h2>
-<span>{profiles.length} MEMBERS</span>
+
+<div className="group-live-stats">
+<span>
+{totalMembers} {totalMembers === 1 ? "MEMBER" : "MEMBERS"}
+</span>
+
+<span className="group-stat-divider">•</span>
+
+<span>
+{todayContent
+? `${completedTodayCount} COMPLETE TODAY`
+: "STARTS OCT 1"}
+</span>
 </div>
+</div>
+
+  {todayContent && totalMembers > 0 && (
+<div className="group-daily-progress">
+<div
+className="group-daily-progress-fill"
+style={{
+width: `${(completedTodayCount / totalMembers) * 100}%`,
+}}
+/>
+</div>
+)}
 
 {rankedProfiles.map((profile) => {
 const complete = completedToday(profile.id);
