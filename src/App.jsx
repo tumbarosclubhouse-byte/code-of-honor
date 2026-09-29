@@ -196,6 +196,8 @@ const [builderCompletions, setBuilderCompletions] = useState([]);
 const [openBuilder, setOpenBuilder] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
 const [myCompletions, setMyCompletions] = useState([]);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
 
 useEffect(() => {
 loadGroup();
@@ -544,6 +546,68 @@ return;
 
 await loadBuilders();
 };
+  const uploadAvatar = async (event) => {
+const file = event.target.files?.[0];
+
+if (!file) return;
+
+if (!file.type.startsWith("image/")) {
+alert("Please choose an image file.");
+return;
+}
+
+if (file.size > 5 * 1024 * 1024) {
+alert("Please choose an image smaller than 5 MB.");
+return;
+}
+
+setUploadingAvatar(true);
+
+const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+const filePath = `${user.id}/profile.${extension}`;
+
+const { error: uploadError } = await supabase.storage
+.from("avatars")
+.upload(filePath, file, {
+upsert: true,
+contentType: file.type,
+});
+
+if (uploadError) {
+alert(`Could not upload photo: ${uploadError.message}`);
+setUploadingAvatar(false);
+return;
+}
+
+const {
+data: { publicUrl },
+} = supabase.storage
+.from("avatars")
+.getPublicUrl(filePath);
+
+const avatarUrl = `${publicUrl}?v=${Date.now()}`;
+
+const { error: profileError } = await supabase
+.from("profiles")
+.update({
+avatar_url: avatarUrl,
+})
+.eq("id", user.id);
+
+if (profileError) {
+alert(`Could not save photo: ${profileError.message}`);
+setUploadingAvatar(false);
+return;
+}
+
+await loadProfileData();
+await loadGroup();
+
+setUploadingAvatar(false);
+
+// Allows choosing the same file again later if desired.
+event.target.value = "";
+};
 const signOut = async () => {
 await supabase.auth.signOut();
 };
@@ -621,10 +685,31 @@ return (
 <main className="profile-main">
 <section className="profile-identity">
 <div className="profile-avatar">
-{myProfile?.display_name
+{myProfile?.avatar_url ? (
+<img
+src={myProfile.avatar_url}
+alt="Profile"
+className="profile-avatar-image"
+/>
+) : (
+myProfile?.display_name
 ?.charAt(0)
-?.toUpperCase() || "?"}
+?.toUpperCase() || "?"
+)}
 </div>
+
+<label className="change-photo-button">
+{uploadingAvatar ? "UPLOADING..." : "CHANGE PHOTO"}
+
+<input
+type="file"
+accept="image/*"
+onChange={uploadAvatar}
+disabled={uploadingAvatar}
+hidden
+/>
+</label>
+
 
 <h1>{myProfile?.display_name || "MEMBER"}</h1>
 
