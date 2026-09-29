@@ -1186,17 +1186,6 @@ START WORKOUT
 </button>
 </section>
 
-<section className="plus-one">
-<div className="plus-one-label">TODAY'S +1</div>
-<p>
-Reach out to someone you haven't spoken to in a while.
-</p>
-
-<button className="small-button">
-<Circle size={18} />
-MARK COMPLETE
-</button>
-</section>
 
 <section className="group-section">
 <div className="section-title">
