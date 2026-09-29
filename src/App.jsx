@@ -429,7 +429,16 @@ if (newYorkNow >= challengeEnd) {
 alert("The October challenge has ended.");
 return;
 }
+const alreadyCompleted = todayCompletions.some(
+(item) =>
+item.user_id === user.id &&
+item.workout_complete === true
+);
 
+if (alreadyCompleted) {
+alert("Today's 150 pushups are already complete.");
+return;
+}
 setCurrentSet(1);
 setResting(false);
 setRestSeconds(300);
@@ -743,7 +752,7 @@ item.user_id === profileId && item.workout_complete === true
 const completedDays = myCompletions.filter(
 (item) => item.workout_complete === true
 );
-
+const myWorkoutComplete = completedToday(user.id);
 const daysCompleted = completedDays.length;
 const totalPushups = daysCompleted * 150;
 const buildersCompleted = builderCompletions.length;
@@ -1301,10 +1310,17 @@ return (
 </div>
 
 <button
-className="primary-button"
+className={`primary-button ${
+myWorkoutComplete ? "workout-done-button" : ""
+}`}
 onClick={startWorkout}
+disabled={myWorkoutComplete}
 >
-{todayContent ? "START WORKOUT" : "BEGINS OCTOBER 1"}
+{!todayContent
+? "BEGINS OCTOBER 1"
+: myWorkoutComplete
+? "TODAY'S WORKOUT COMPLETE ✓"
+: "START WORKOUT"}
 </button>
 </section>
 
