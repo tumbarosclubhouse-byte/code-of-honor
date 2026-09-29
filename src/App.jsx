@@ -182,11 +182,32 @@ OCTOBER 1 — OCTOBER 31
 function MainApp({ user }) {
 const [profiles, setProfiles] = useState([]);
 const [todayCompletions, setTodayCompletions] = useState([]);
+  const [workoutOpen, setWorkoutOpen] = useState(false);
+const [currentSet, setCurrentSet] = useState(1);
+const [resting, setResting] = useState(false);
+const [restSeconds, setRestSeconds] = useState(300);
+const [workoutStartedAt, setWorkoutStartedAt] = useState(null);
+const [savingWorkout, setSavingWorkout] = useState(false);
 
 useEffect(() => {
 loadGroup();
 }, []);
+useEffect(() => {
+if (!resting) return;
 
+if (restSeconds <= 0) {
+setResting(false);
+setRestSeconds(300);
+return;
+}
+
+const timer = setInterval(() => {
+setRestSeconds((seconds) => seconds - 1);
+}, 1000);
+
+return () => clearInterval(timer);
+}, [resting, restSeconds]);
+  
 const loadGroup = async () => {
 const { data: profileData } = await supabase
 .from("profiles")
@@ -209,6 +230,86 @@ setTodayCompletions(completionData);
 }
 };
 
+  const startWorkout = () => {
+setCurrentSet(1);
+setResting(false);
+setRestSeconds(300);
+setWorkoutStartedAt(Date.now());
+setWorkoutOpen(true);
+};
+
+const finishSet = async () => {
+// Sets 1 and 2 are followed by a 5-minute rest.
+if (currentSet < 3) {
+setRestSeconds(300);
+setResting(true);
+setCurrentSet((set) => set + 1);
+return;
+}
+
+// Set 3 finishes the entire workout.
+await finishWorkout();
+};
+
+const skipRest = () => {
+setResting(false);
+setRestSeconds(300);
+};
+
+const finishWorkout = async () => {
+if (savingWorkout) return;
+
+setSavingWorkout(true);
+
+const today = new Date().toISOString().slice(0, 10);
+
+const workoutSeconds = workoutStartedAt
+? Math.floor((Date.now() - workoutStartedAt) / 1000)
+: null;
+
+const { error } = await supabase
+.from("daily_completions")
+.upsert(
+{
+user_id: user.id,
+completion_date: today,
+set_1: true,
+set_2: true,
+set_3: true,
+workout_complete: true,
+completed_at: new Date().toISOString(),
+workout_seconds: workoutSeconds,
+eliminated: false,
+},
+{
+onConflict: "user_id,completion_date",
+}
+);
+
+if (error) {
+alert(`Could not save workout: ${error.message}`);
+setSavingWorkout(false);
+return;
+}
+
+setWorkoutOpen(false);
+setResting(false);
+setCurrentSet(1);
+setRestSeconds(300);
+setWorkoutStartedAt(null);
+setSavingWorkout(false);
+
+await loadGroup();
+};
+
+const formatTime = (seconds) => {
+const minutes = Math.floor(seconds / 60);
+const remainingSeconds = seconds % 60;
+
+return `${String(minutes).padStart(2, "0")}:${String(
+remainingSeconds
+).padStart(2, "0")}`;
+};
 const signOut = async () => {
 await supabase.auth.signOut();
 };
@@ -218,7 +319,110 @@ todayCompletions.some(
 (item) =>
 item.user_id === profileId && item.workout_complete === true
 );
+if (workoutOpen) {
+return (
+<div className="workout-screen">
+<div className="workout-photo">
+<button
+className="workout-back"
+onClick={() => setWorkoutOpen(false)}
+>
+←
+</button>
 
+<div className="workout-photo-title">
+<span>TODAY'S CHALLENGE</span>
+<strong>150 PUSHUPS</strong>
+</div>
+</div>
+
+<div className="workout-content">
+<p className="workout-set-label">
+SET {currentSet} OF 3
+</p>
+
+{!resting ? (
+<>
+<h1>50 PUSHUPS</h1>
+
+<div className="rep-count">
+50
+<span> / 50</span>
+</div>
+
+<p className="workout-instruction">
+Complete 50 pushups at your own pace.
+<br />
+Tap below when the set is finished.
+</p>
+
+<button
+className="workout-complete-button"
+onClick={finishSet}
+disabled={savingWorkout}
+>
+{savingWorkout
+? "SAVING..."
+: currentSet === 3
+? "FINISH 150 PUSHUPS"
+: `MARK SET ${currentSet} COMPLETE`}
+</button>
+</>
+) : (
+<div className="rest-card">
+<p className="rest-label">
+SET {currentSet - 1} COMPLETE
+</p>
+
+<h2>REST</h2>
+
+<div className="rest-time">
+{formatTime(restSeconds)}
+</div>
+
+<p>
+Take five minutes to recover before Set {currentSet}.
+</p>
+
+<button
+className="skip-rest-button"
+onClick={skipRest}
+>
+START SET {currentSet} EARLY
+</button>
+</div>
+)}
+
+<div className="set-progress">
+{[1, 2, 3].map((set) => {
+const finished =
+set < currentSet ||
+(currentSet === 3 && savingWorkout);
+
+const active =
+set === currentSet && !resting;
+
+return (
+<div
+className={`set-step ${
+finished ? "finished" : ""
+} ${active ? "active" : ""}`}
+key={set}
+>
+<div>{finished ? "✓" : set}</div>
+<span>SET {set}</span>
+</div>
+);
+})}
+</div>
+
+<p className="workout-motto">
+DISCIPLINE BUILDS FREEDOM
+</p>
+</div>
+</div>
+);
+}
 return (
 <div className="app">
 <header className="header">
@@ -261,7 +465,10 @@ return (
 <span>5 MIN RESTS</span>
 </div>
 
-<button className="primary-button">
+<button
+className="primary-button"
+onClick={startWorkout}
+>
 START WORKOUT
 </button>
 </section>
