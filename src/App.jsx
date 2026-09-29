@@ -224,8 +224,13 @@ return () => clearInterval(timer);
 }, [resting, restSeconds]);
 
   const resumeWorkout = async () => {
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString("en-CA", {
+timeZone: "America/New_York",
+});
 
+if (today < "2026-10-01" || today > "2026-10-31") {
+return;
+}
 const { data, error } = await supabase
 .from("daily_completions")
 .select("*")
@@ -403,7 +408,28 @@ return false;
 
 return true;
 };
-  const startWorkout = () => {
+const startWorkout = () => {
+const now = new Date();
+
+const newYorkNow = new Date(
+now.toLocaleString("en-US", {
+timeZone: "America/New_York",
+})
+);
+
+const challengeStart = new Date(2026, 9, 1, 0, 0, 0);
+const challengeEnd = new Date(2026, 10, 1, 0, 0, 0);
+
+if (newYorkNow < challengeStart) {
+alert("CODE OF HONOR begins October 1.");
+return;
+}
+
+if (newYorkNow >= challengeEnd) {
+alert("The October challenge has ended.");
+return;
+}
+
 setCurrentSet(1);
 setResting(false);
 setRestSeconds(300);
@@ -1227,7 +1253,7 @@ return (
 className="primary-button"
 onClick={startWorkout}
 >
-START WORKOUT
+{todayContent ? "START WORKOUT" : "BEGINS OCTOBER 1"}
 </button>
 </section>
 
