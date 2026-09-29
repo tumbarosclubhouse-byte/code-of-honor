@@ -1,13 +1,224 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
 Shield,
 Flame,
 CheckCircle2,
 Circle,
 Dumbbell,
+LogOut,
 } from "lucide-react";
+import { supabase } from "./supabaseClient";
 
-export default function App() {
+function AuthScreen() {
+const [mode, setMode] = useState("join");
+const [displayName, setDisplayName] = useState("");
+const [username, setUsername] = useState("");
+const [email, setEmail] = useState("");
+const [password, setPassword] = useState("");
+const [message, setMessage] = useState("");
+const [loading, setLoading] = useState(false);
+
+const joinChallenge = async () => {
+if (!displayName || !username || !email || !password) {
+setMessage("Please complete every field.");
+return;
+}
+
+setLoading(true);
+setMessage("");
+
+const cleanUsername = username.trim().toLowerCase();
+
+const { data, error } = await supabase.auth.signUp({
+email: email.trim(),
+password,
+});
+
+if (error) {
+setMessage(error.message);
+setLoading(false);
+return;
+}
+
+if (data.user) {
+const { error: profileError } = await supabase
+.from("profiles")
+.insert({
+id: data.user.id,
+username: cleanUsername,
+display_name: displayName.trim(),
+is_active: true,
+});
+
+if (profileError) {
+setMessage(profileError.message);
+setLoading(false);
+return;
+}
+}
+
+if (!data.session) {
+setMessage(
+"Account created. Check your email to confirm your account, then sign in."
+);
+setMode("login");
+}
+
+setLoading(false);
+};
+
+const signIn = async () => {
+if (!email || !password) {
+setMessage("Enter your email and password.");
+return;
+}
+
+setLoading(true);
+setMessage("");
+
+const { error } = await supabase.auth.signInWithPassword({
+email: email.trim(),
+password,
+});
+
+if (error) {
+setMessage(error.message);
+}
+
+setLoading(false);
+};
+
+return (
+<div className="auth-screen">
+<div className="auth-overlay">
+<div className="auth-brand-mark">
+<Shield size={28} />
+</div>
+
+<p className="auth-small">THE</p>
+<h1>CODE OF HONOR</h1>
+<p className="auth-tagline">DISCIPLINE BUILDS FREEDOM</p>
+
+<div className="auth-card">
+<div className="auth-tabs">
+<button
+className={mode === "join" ? "active" : ""}
+onClick={() => {
+setMode("join");
+setMessage("");
+}}
+>
+JOIN
+</button>
+
+<button
+className={mode === "login" ? "active" : ""}
+onClick={() => {
+setMode("login");
+setMessage("");
+}}
+>
+SIGN IN
+</button>
+</div>
+
+{mode === "join" && (
+<>
+<input
+placeholder="YOUR NAME"
+value={displayName}
+onChange={(e) => setDisplayName(e.target.value)}
+/>
+
+<input
+placeholder="USERNAME"
+value={username}
+onChange={(e) => setUsername(e.target.value)}
+autoCapitalize="none"
+/>
+</>
+)}
+
+<input
+type="email"
+placeholder="EMAIL"
+value={email}
+onChange={(e) => setEmail(e.target.value)}
+autoCapitalize="none"
+/>
+
+<input
+type="password"
+placeholder="PASSWORD"
+value={password}
+onChange={(e) => setPassword(e.target.value)}
+/>
+
+{message && <div className="auth-message">{message}</div>}
+
+<button
+className="primary-button"
+disabled={loading}
+onClick={mode === "join" ? joinChallenge : signIn}
+>
+{loading
+? "PLEASE WAIT..."
+: mode === "join"
+? "JOIN THE CHALLENGE"
+: "ENTER CODE OF HONOR"}
+</button>
+</div>
+
+<p className="auth-footer">
+OCTOBER 1 — OCTOBER 31
+<br />
+31 DAYS • 4,650 PUSHUPS
+</p>
+</div>
+</div>
+);
+}
+
+function MainApp({ user }) {
+const [profiles, setProfiles] = useState([]);
+const [todayCompletions, setTodayCompletions] = useState([]);
+
+useEffect(() => {
+loadGroup();
+}, []);
+
+const loadGroup = async () => {
+const { data: profileData } = await supabase
+.from("profiles")
+.select("*")
+.order("created_at", { ascending: true });
+
+if (profileData) {
+setProfiles(profileData);
+}
+
+const today = new Date().toISOString().slice(0, 10);
+
+const { data: completionData } = await supabase
+.from("daily_completions")
+.select("*")
+.eq("completion_date", today);
+
+if (completionData) {
+setTodayCompletions(completionData);
+}
+};
+
+const signOut = async () => {
+await supabase.auth.signOut();
+};
+
+const completedToday = (profileId) =>
+todayCompletions.some(
+(item) =>
+item.user_id === profileId && item.workout_complete === true
+);
+
 return (
 <div className="app">
 <header className="header">
@@ -19,6 +230,10 @@ return (
 <div className="brand">CODE OF HONOR</div>
 <div className="challenge-label">OCTOBER CHALLENGE</div>
 </div>
+
+<button className="logout-button" onClick={signOut}>
+<LogOut size={18} />
+</button>
 </header>
 
 <main>
@@ -43,7 +258,7 @@ return (
 <div className="workout-meta">
 <span>3 × 50</span>
 <span>•</span>
-<span>10 MINUTES</span>
+<span>5 MIN RESTS</span>
 </div>
 
 <button className="primary-button">
@@ -56,6 +271,7 @@ START WORKOUT
 <p>
 Reach out to someone you haven't spoken to in a while.
 </p>
+
 <button className="small-button">
 <Circle size={18} />
 MARK COMPLETE
@@ -65,37 +281,31 @@ MARK COMPLETE
 <section className="group-section">
 <div className="section-title">
 <h2>THE GROUP</h2>
-<span>DAY 1</span>
+<span>{profiles.length} MEMBERS</span>
 </div>
 
-<div className="member">
-<div className="avatar">T</div>
-<div className="member-info">
-<strong>TJ</strong>
-<span>
-<Flame size={14} /> 1 day
-</span>
+{profiles.map((profile) => {
+const complete = completedToday(profile.id);
+
+return (
+<div className="member" key={profile.id}>
+<div className="avatar">
+{profile.display_name?.charAt(0)?.toUpperCase() || "?"}
 </div>
+
+<div className="member-info">
+<strong>{profile.display_name}</strong>
+<span>@{profile.username}</span>
+</div>
+
+{complete ? (
 <CheckCircle2 className="complete" />
-</div>
-
-<div className="member">
-<div className="avatar">R</div>
-<div className="member-info">
-<strong>RJ</strong>
-<span>Not completed yet</span>
-</div>
+) : (
 <Circle className="incomplete" />
+)}
 </div>
-
-<div className="member">
-<div className="avatar">C</div>
-<div className="member-info">
-<strong>Chris</strong>
-<span>Not completed yet</span>
-</div>
-<Circle className="incomplete" />
-</div>
+);
+})}
 </section>
 </main>
 
@@ -117,4 +327,32 @@ PROFILE
 </nav>
 </div>
 );
+}
+
+export default function App() {
+const [session, setSession] = useState(undefined);
+
+useEffect(() => {
+supabase.auth.getSession().then(({ data }) => {
+setSession(data.session);
+});
+
+const {
+data: { subscription },
+} = supabase.auth.onAuthStateChange((_event, newSession) => {
+setSession(newSession);
+});
+
+return () => subscription.unsubscribe();
+}, []);
+
+if (session === undefined) {
+return <div className="loading-screen">CODE OF HONOR</div>;
+}
+
+if (!session) {
+return <AuthScreen />;
+}
+
+return <MainApp user={session.user} />;
 }
