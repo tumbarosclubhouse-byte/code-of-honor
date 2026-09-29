@@ -198,6 +198,10 @@ const [openBuilder, setOpenBuilder] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
 const [myCompletions, setMyCompletions] = useState([]);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [viewingProfile, setViewingProfile] = useState(null);
+const [editingBio, setEditingBio] = useState(false);
+const [bioDraft, setBioDraft] = useState("");
+const [savingBio, setSavingBio] = useState(false);
 
 
 useEffect(() => {
@@ -594,6 +598,30 @@ return;
 
 await loadBuilders();
 };
+  const saveBio = async () => {
+if (savingBio) return;
+
+setSavingBio(true);
+
+const cleanBio = bioDraft.trim().slice(0, 180);
+
+const { error } = await supabase
+.from("profiles")
+.update({ bio: cleanBio })
+.eq("id", user.id);
+
+if (error) {
+alert(`Could not save bio: ${error.message}`);
+setSavingBio(false);
+return;
+}
+
+await loadProfileData();
+await loadGroup();
+
+setEditingBio(false);
+setSavingBio(false);
+};
   const uploadAvatar = async (event) => {
 const file = event.target.files?.[0];
 
@@ -751,6 +779,109 @@ item.user_id === profileId && item.workout_complete === true
 );
   const myWorkoutComplete = completedToday(user.id);
 
+  if (viewingProfile) {
+const memberDays = groupCompletions.filter(
+(item) =>
+item.user_id === viewingProfile.id &&
+item.workout_complete === true
+);
+
+const memberDaysCompleted = memberDays.length;
+const memberPushups = memberDaysCompleted * 150;
+const memberStreak = getMemberStreak(viewingProfile.id);
+
+const memberBuilderCount = builderCompletions.filter(
+(item) => item.user_id === viewingProfile.id
+).length;
+
+return (
+<div className="public-profile-screen">
+<header className="public-profile-header">
+<button
+className="public-profile-back"
+onClick={() => setViewingProfile(null)}
+>
+←
+</button>
+
+<div>
+<div className="brand">CODE OF HONOR</div>
+<div className="challenge-label">MEMBER PROFILE</div>
+</div>
+</header>
+
+<main className="public-profile-main">
+<section className="public-profile-identity">
+<div className="public-profile-avatar">
+{viewingProfile.avatar_url ? (
+<img
+src={viewingProfile.avatar_url}
+alt={viewingProfile.display_name || "Member"}
+/>
+) : (
+viewingProfile.display_name
+?.charAt(0)
+?.toUpperCase() || "?"
+)}
+</div>
+
+<h1>{viewingProfile.display_name}</h1>
+<p className="public-username">
+@{viewingProfile.username}
+</p>
+
+{viewingProfile.bio && (
+<p className="public-profile-bio">
+{viewingProfile.bio}
+</p>
+)}
+</section>
+
+<section className="public-profile-stats">
+<div>
+<strong>{memberDaysCompleted}</strong>
+<span>DAYS</span>
+</div>
+
+<div>
+<strong>{memberPushups.toLocaleString()}</strong>
+<span>PUSHUPS</span>
+</div>
+
+<div>
+<strong>{memberStreak}</strong>
+<span>DAY STREAK</span>
+</div>
+</section>
+
+<section className="public-code-card">
+<p className="eyebrow">THE CODE</p>
+
+<div className="code-stat-row">
+<span>DAYS COMPLETED</span>
+<strong>{memberDaysCompleted} / 31</strong>
+</div>
+
+<div className="code-stat-row">
+<span>CURRENT STREAK</span>
+<strong>
+{memberStreak} {memberStreak === 1 ? "DAY" : "DAYS"}
+</strong>
+</div>
+
+<div className="code-stat-row">
+<span>PUSHUPS COMPLETED</span>
+<strong>{memberPushups.toLocaleString()}</strong>
+</div>
+</section>
+
+<p className="public-profile-motto">
+DISCIPLINE BUILDS FREEDOM
+</p>
+</main>
+</div>
+);
+}
   if (activePage === "profile") {
 const completedDays = myCompletions.filter(
 (item) => item.workout_complete === true
@@ -849,6 +980,55 @@ hidden
 <p>
 @{myProfile?.username || "codeofhonor"}
 </p>
+  {editingBio ? (
+<div className="bio-editor">
+<textarea
+value={bioDraft}
+maxLength={180}
+placeholder="Write a short bio..."
+onChange={(e) => setBioDraft(e.target.value)}
+/>
+
+<div className="bio-count">
+{bioDraft.length} / 180
+</div>
+
+<div className="bio-actions">
+<button
+onClick={() => {
+setEditingBio(false);
+setBioDraft(myProfile?.bio || "");
+}}
+>
+CANCEL
+</button>
+
+<button
+onClick={saveBio}
+disabled={savingBio}
+>
+{savingBio ? "SAVING..." : "SAVE BIO"}
+</button>
+</div>
+</div>
+) : (
+<>
+<p className="profile-bio">
+{myProfile?.bio || "No bio yet."}
+</p>
+
+<button
+className="edit-bio-button"
+onClick={() => {
+setBioDraft(myProfile?.bio || "");
+setEditingBio(true);
+}}
+>
+{myProfile?.bio ? "EDIT BIO" : "ADD BIO"}
+</button>
+</>
+)}
+
 </section>
 
 <section className="profile-progress">
@@ -1338,8 +1518,11 @@ const complete = completedToday(profile.id);
   const streak = getMemberStreak(profile.id);
 
 return (
-<div className="member" key={profile.id}>
-<div className="avatar">
+<div
+className="member clickable-member"
+key={profile.id}
+onClick={() => setViewingProfile(profile)}
+><div className="avatar">
 {profile.avatar_url ? (
 <img
 src={profile.avatar_url}
