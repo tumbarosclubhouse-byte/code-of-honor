@@ -190,10 +190,15 @@ const [restSeconds, setRestSeconds] = useState(300);
 const [workoutStartedAt, setWorkoutStartedAt] = useState(null);
 const [savingWorkout, setSavingWorkout] = useState(false);
   const [workoutSuccess, setWorkoutSuccess] = useState(false);
+  const [activePage, setActivePage] = useState("today");
+const [builders, setBuilders] = useState([]);
+const [builderCompletions, setBuilderCompletions] = useState([]);
+const [openBuilder, setOpenBuilder] = useState(null);
 
 useEffect(() => {
 loadGroup();
 loadTodayContent();
+  loadBuilders();
 resumeWorkout();
 }, []);
 useEffect(() => {
@@ -281,6 +286,30 @@ return;
 }
 
 setTodayContent(data);
+};
+  const loadBuilders = async () => {
+const { data: builderData, error: builderError } = await supabase
+.from("builders")
+.select("*")
+.order("id", { ascending: true });
+
+if (builderError) {
+console.error("Could not load Builders:", builderError);
+return;
+}
+
+const { data: completionData, error: completionError } = await supabase
+.from("builder_completions")
+.select("*")
+.eq("user_id", user.id);
+
+if (completionError) {
+console.error("Could not load Builder completions:", completionError);
+return;
+}
+
+setBuilders(builderData || []);
+setBuilderCompletions(completionData || []);
 };
 const loadGroup = async () => {
 const { data: profileData } = await supabase
@@ -444,6 +473,44 @@ return `${String(minutes).padStart(2, "0")}:${String(
 remainingSeconds
 ).padStart(2, "0")}`;
 };
+  const builderIsComplete = (builderId) => {
+return builderCompletions.some(
+(completion) => completion.builder_id === builderId
+);
+};
+
+const toggleBuilder = async (builderId) => {
+const existing = builderCompletions.find(
+(completion) => completion.builder_id === builderId
+);
+
+if (existing) {
+const { error } = await supabase
+.from("builder_completions")
+.delete()
+.eq("id", existing.id)
+.eq("user_id", user.id);
+
+if (error) {
+alert(`Could not update Builder: ${error.message}`);
+return;
+}
+} else {
+const { error } = await supabase
+.from("builder_completions")
+.insert({
+user_id: user.id,
+builder_id: builderId,
+});
+
+if (error) {
+alert(`Could not complete Builder: ${error.message}`);
+return;
+}
+}
+
+await loadBuilders();
+};
 const signOut = async () => {
 await supabase.auth.signOut();
 };
@@ -453,6 +520,145 @@ todayCompletions.some(
 (item) =>
 item.user_id === profileId && item.workout_complete === true
 );
+  if (activePage === "challenge") {
+const completedCount = builderCompletions.length;
+const progressPercent = (completedCount / 16) * 100;
+
+const categories = [
+"DISCIPLINE",
+"AWARENESS",
+"KINDNESS",
+"RELATIONSHIPS",
+"COURAGE",
+"SACRIFICE",
+];
+
+return (
+<div className="builders-screen">
+<header className="builders-header">
+<div className="brand-mark">
+<Shield size={22} />
+</div>
+
+<div>
+<div className="brand">CODE OF HONOR</div>
+<div className="challenge-label">OCTOBER CHALLENGE</div>
+</div>
+</header>
+
+<main className="builders-main">
+<section className="builders-intro">
+<p className="eyebrow">CODE OF HONOR</p>
+<h1>THE 16 BUILDERS</h1>
+
+<p className="builders-subtitle">
+Sixteen acts. One month. Complete them all before October 31.
+</p>
+
+<div className="builders-progress-row">
+<strong>{completedCount} / 16</strong>
+<span>COMPLETED</span>
+</div>
+
+<div className="builders-progress-track">
+<div
+className="builders-progress-fill"
+style={{ width: `${progressPercent}%` }}
+/>
+</div>
+</section>
+
+{categories.map((category) => {
+const categoryBuilders = builders.filter(
+(builder) => builder.category === category
+);
+
+if (categoryBuilders.length === 0) return null;
+
+return (
+<section className="builder-category" key={category}>
+<div className="builder-category-title">
+{category}
+</div>
+
+{categoryBuilders.map((builder) => {
+const complete = builderIsComplete(builder.id);
+const isOpen = openBuilder === builder.id;
+
+return (
+<div
+className={`builder-card ${
+complete ? "builder-complete" : ""
+}`}
+key={builder.id}
+>
+<button
+className="builder-summary"
+onClick={() =>
+setOpenBuilder(isOpen ? null : builder.id)
+}
+>
+<div className="builder-number">
+{String(builder.id).padStart(2, "0")}
+</div>
+
+<div className="builder-title-area">
+<strong>{builder.title}</strong>
+<span>{builder.principle}</span>
+</div>
+
+<div
+className={`builder-status ${
+complete ? "complete" : ""
+}`}
+>
+{complete ? "✓" : "+"}
+</div>
+</button>
+
+{isOpen && (
+<div className="builder-details">
+<p>{builder.description}</p>
+
+<button
+className={`builder-action ${
+complete ? "undo" : ""
+}`}
+onClick={() => toggleBuilder(builder.id)}
+>
+{complete
+? "MARK AS NOT COMPLETE"
+: "MARK BUILDER COMPLETE"}
+</button>
+</div>
+)}
+</div>
+);
+})}
+</section>
+);
+})}
+</main>
+
+<nav className="bottom-nav">
+<button onClick={() => setActivePage("today")}>
+<Flame size={21} />
+TODAY
+</button>
+
+<button className="nav-active">
+<Shield size={21} />
+CHALLENGE
+</button>
+
+<button>
+<Circle size={21} />
+PROFILE
+</button>
+</nav>
+</div>
+);
+}
   if (workoutSuccess) {
 return (
 <div className="success-screen">
@@ -721,7 +927,7 @@ return (
 TODAY
 </button>
 
-<button>
+<button onClick={() => setActivePage("challenge")}>
 <Shield size={21} />
 CHALLENGE
 </button>
