@@ -192,6 +192,7 @@ const [savingWorkout, setSavingWorkout] = useState(false);
 
 useEffect(() => {
 loadGroup();
+resumeWorkout();
 }, []);
 useEffect(() => {
 if (!resting) return;
@@ -208,7 +209,59 @@ setRestSeconds((seconds) => seconds - 1);
 
 return () => clearInterval(timer);
 }, [resting, restSeconds]);
-  
+
+  const resumeWorkout = async () => {
+const today = new Date().toISOString().slice(0, 10);
+
+const { data, error } = await supabase
+.from("daily_completions")
+.select("*")
+.eq("user_id", user.id)
+.eq("completion_date", today)
+.maybeSingle();
+
+if (error) {
+console.error("Could not restore workout:", error);
+return;
+}
+
+// No workout started today, or today's workout is already finished.
+if (!data || data.workout_complete) {
+return;
+}
+
+let nextSet = 1;
+
+if (data.set_2) {
+nextSet = 3;
+} else if (data.set_1) {
+nextSet = 2;
+}
+
+setCurrentSet(nextSet);
+setWorkoutOpen(true);
+
+if (data.rest_until) {
+const secondsLeft = Math.max(
+0,
+Math.ceil(
+(new Date(data.rest_until).getTime() - Date.now()) / 1000
+)
+);
+
+if (secondsLeft > 0) {
+setRestSeconds(secondsLeft);
+setResting(true);
+} else {
+setRestSeconds(300);
+setResting(false);
+
+await saveWorkoutProgress({
+rest_until: null,
+});
+}
+}
+};
 const loadGroup = async () => {
 const { data: profileData } = await supabase
 .from("profiles")
@@ -230,7 +283,31 @@ if (completionData) {
 setTodayCompletions(completionData);
 }
 };
+const getToday = () => new Date().toISOString().slice(0, 10);
 
+const saveWorkoutProgress = async (updates) => {
+const today = getToday();
+
+const { error } = await supabase
+.from("daily_completions")
+.upsert(
+{
+user_id: user.id,
+completion_date: today,
+...updates,
+},
+{
+onConflict: "user_id,completion_date",
+}
+);
+
+if (error) {
+console.error("Could not save workout progress:", error);
+return false;
+}
+
+return true;
+};
   const startWorkout = () => {
 setCurrentSet(1);
 setResting(false);
@@ -240,19 +317,53 @@ setWorkoutOpen(true);
 };
 
 const finishSet = async () => {
-// Sets 1 and 2 are followed by a 5-minute rest.
+if (savingWorkout) return;
+
+setSavingWorkout(true);
+
 if (currentSet < 3) {
-setRestSeconds(300);
-setResting(true);
-setCurrentSet((set) => set + 1);
+const restUntil = new Date(Date.now() + 5 * 60 * 1000);
+
+const updates =
+currentSet === 1
+? {
+set_1: true,
+set_2: false,
+set_3: false,
+workout_complete: false,
+rest_until: restUntil.toISOString(),
+}
+: {
+set_1: true,
+set_2: true,
+set_3: false,
+workout_complete: false,
+rest_until: restUntil.toISOString(),
+};
+
+const saved = await saveWorkoutProgress(updates);
+
+if (!saved) {
+alert("Your set could not be saved. Please try again.");
+setSavingWorkout(false);
 return;
 }
 
-// Set 3 finishes the entire workout.
+setCurrentSet((set) => set + 1);
+setRestSeconds(300);
+setResting(true);
+setSavingWorkout(false);
+return;
+}
+
 await finishWorkout();
 };
 
-const skipRest = () => {
+const skipRest = async () => {
+await saveWorkoutProgress({
+rest_until: null,
+});
+
 setResting(false);
 setRestSeconds(300);
 };
@@ -281,6 +392,7 @@ workout_complete: true,
 completed_at: new Date().toISOString(),
 workout_seconds: workoutSeconds,
 eliminated: false,
+  rest_until: null,
 },
 {
 onConflict: "user_id,completion_date",
