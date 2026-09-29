@@ -182,6 +182,7 @@ OCTOBER 1 — OCTOBER 31
 function MainApp({ user }) {
 const [profiles, setProfiles] = useState([]);
 const [todayCompletions, setTodayCompletions] = useState([]);
+  const [groupCompletions, setGroupCompletions] = useState([]);
   const [todayContent, setTodayContent] = useState(null);
   const [workoutOpen, setWorkoutOpen] = useState(false);
 const [currentSet, setCurrentSet] = useState(1);
@@ -364,6 +365,17 @@ const { data: completionData } = await supabase
 
 if (completionData) {
 setTodayCompletions(completionData);
+}
+  const { data: historyData, error: historyError } = await supabase
+.from("daily_completions")
+.select("user_id, completion_date, workout_complete")
+.eq("workout_complete", true)
+.order("completion_date", { ascending: true });
+
+if (historyError) {
+console.error("Could not load group history:", historyError);
+} else {
+setGroupCompletions(historyData || []);
 }
 };
 const getToday = () => new Date().toISOString().slice(0, 10);
@@ -611,7 +623,40 @@ event.target.value = "";
 const signOut = async () => {
 await supabase.auth.signOut();
 };
+const getMemberStreak = (profileId) => {
+const days = groupCompletions
+.filter(
+(item) =>
+item.user_id === profileId &&
+item.workout_complete === true
+)
+.map((item) => item.completion_date)
+.filter(Boolean)
+.sort();
 
+if (days.length === 0) return 0;
+
+const uniqueDays = [...new Set(days)];
+
+let streak = 1;
+
+for (let i = uniqueDays.length - 1; i > 0; i--) {
+const current = new Date(`${uniqueDays[i]}T12:00:00`);
+const previous = new Date(`${uniqueDays[i - 1]}T12:00:00`);
+
+const difference = Math.round(
+(current - previous) / (1000 * 60 * 60 * 24)
+);
+
+if (difference === 1) {
+streak += 1;
+} else {
+break;
+}
+}
+
+return streak;
+};
 const completedToday = (profileId) =>
 todayCompletions.some(
 (item) =>
@@ -1195,6 +1240,7 @@ START WORKOUT
 
 {profiles.map((profile) => {
 const complete = completedToday(profile.id);
+  const streak = getMemberStreak(profile.id);
 
 return (
 <div className="member" key={profile.id}>
@@ -1213,13 +1259,29 @@ profile.display_name?.charAt(0)?.toUpperCase() || "?"
 <div className="member-info">
 <strong>{profile.display_name}</strong>
 <span>@{profile.username}</span>
+
+<div className="member-streak">
+🔥 {streak} {streak === 1 ? "DAY" : "DAYS"} STREAK
+</div>
 </div>
 
+<div
+className={`member-today-status ${
+complete ? "done" : "not-done"
+}`}
+>
 {complete ? (
-<CheckCircle2 className="complete" />
+<>
+<CheckCircle2 size={18} />
+<span>COMPLETE</span>
+</>
 ) : (
-<Circle className="incomplete" />
+<>
+<Circle size={18} />
+<span>NOT YET</span>
+</>
 )}
+</div>
 </div>
 );
 })}
