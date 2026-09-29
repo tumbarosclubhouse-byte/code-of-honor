@@ -729,3 +729,132 @@ font-family: Georgia, "Times New Roman", serif;
 font-size: 10px;
 letter-spacing: 4px;
 }
+/* WORKOUT SUCCESS SCREEN */
+
+.success-screen {
+min-height: 100vh;
+display: flex;
+justify-content: center;
+align-items: center;
+padding: 30px 22px;
+background:
+linear-gradient(
+rgba(5, 6, 6, 0.68),
+rgba(5, 6, 6, 0.94)
+),
+url("/code%20of%20honor.jpg");
+background-size: cover;
+background-position: center;
+color: #f4f1e9;
+}
+
+.success-content {
+width: 100%;
+max-width: 440px;
+text-align: center;
+}
+
+.success-check {
+width: 78px;
+height: 78px;
+margin: 0 auto 25px;
+display: grid;
+place-items: center;
+border: 2px solid #c9aa75;
+border-radius: 50%;
+background: rgba(201, 170, 117, 0.14);
+color: #d7b97e;
+font-size: 38px;
+font-weight: 700;
+box-shadow: 0 0 45px rgba(201, 170, 117, 0.18);
+}
+
+.success-eyebrow {
+margin: 0 0 8px;
+color: #c9aa75;
+font-size: 10px;
+font-weight: 900;
+letter-spacing: 4px;
+}
+
+.success-number {
+margin: 0;
+font-size: 82px;
+font-weight: 900;
+line-height: 1;
+}
+
+.success-number span {
+margin-left: 4px;
+color: #8a8c87;
+font-size: 29px;
+}
+
+.success-content h1 {
+margin: 13px 0 8px;
+font-family: Georgia, "Times New Roman", serif;
+font-size: 27px;
+font-weight: 500;
+letter-spacing: 2px;
+}
+
+.success-quote {
+margin: 0 0 32px;
+color: #c8c3b8;
+font-family: Georgia, "Times New Roman", serif;
+font-size: 16px;
+font-style: italic;
+}
+
+.success-stats {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+margin: 0 0 28px;
+padding: 20px 8px;
+border-top: 1px solid rgba(201, 170, 117, 0.25);
+border-bottom: 1px solid rgba(201, 170, 117, 0.25);
+background: rgba(0, 0, 0, 0.18);
+}
+
+.success-stats div {
+display: flex;
+flex-direction: column;
+gap: 6px;
+}
+
+.success-stats div + div {
+border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.success-stats strong {
+color: #eee8dc;
+font-size: 22px;
+}
+
+.success-stats span {
+color: #8b8d88;
+font-size: 7px;
+font-weight: 900;
+letter-spacing: 1.3px;
+}
+
+.success-button {
+width: 100%;
+min-height: 58px;
+border: 0;
+border-radius: 13px;
+background: linear-gradient(135deg, #dcc18b, #ac874c);
+color: #10110f;
+font-size: 11px;
+font-weight: 900;
+letter-spacing: 2px;
+cursor: pointer;
+}
+
+.success-motto {
+margin-top: 30px;
+color: #b69762;
+font-family: Georgia, "Times New Roman", serif;
+font-size: 9px;
+letter-spacing: 4px;
+}
