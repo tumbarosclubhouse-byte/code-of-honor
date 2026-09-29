@@ -1662,3 +1662,61 @@ color: #66635f;
 .calendar-day.missed strong {
 color: #6c625b;
 }
+/* GROUP LIVE STATS */
+
+.group-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 15px;
+margin-bottom: 10px;
+}
+
+.group-header h2 {
+margin: 0;
+}
+
+.group-live-stats {
+display: flex;
+align-items: center;
+justify-content: flex-end;
+gap: 7px;
+color: #777a75;
+font-size: 7px;
+font-weight: 900;
+letter-spacing: 1.2px;
+text-align: right;
+}
+
+.group-stat-divider {
+color: #b99a64;
+}
+
+.group-daily-progress {
+width: 100%;
+height: 4px;
+overflow: hidden;
+margin: 0 0 16px;
+border-radius: 20px;
+background: #292b29;
+}
+
+.group-daily-progress-fill {
+height: 100%;
+border-radius: inherit;
+background: linear-gradient(90deg, #9c7a45, #d2b374);
+transition: width 0.4s ease;
+}
+
+@media (max-width: 400px) {
+.group-header {
+align-items: flex-start;
+flex-direction: column;
+gap: 7px;
+}
+
+.group-live-stats {
+justify-content: flex-start;
+text-align: left;
+}
+}
