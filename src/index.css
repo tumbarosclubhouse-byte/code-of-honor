@@ -516,3 +516,216 @@ font-size: 13px;
 font-weight: 800;
 letter-spacing: 5px;
 }
+
+/* WORKOUT SCREEN */
+
+.workout-screen {
+min-height: 100vh;
+max-width: 480px;
+margin: 0 auto;
+background: #080909;
+color: #f4f1e9;
+padding-bottom: 40px;
+}
+
+.workout-photo {
+position: relative;
+height: 330px;
+background:
+linear-gradient(
+to bottom,
+rgba(0, 0, 0, 0.08),
+rgba(0, 0, 0, 0.2) 55%,
+rgba(8, 9, 9, 1)
+),
+url("/pushup%20coh.jpg");
+background-size: cover;
+background-position: center;
+}
+
+.workout-back {
+position: absolute;
+top: 22px;
+left: 18px;
+width: 42px;
+height: 42px;
+border: 1px solid rgba(255, 255, 255, 0.2);
+border-radius: 50%;
+background: rgba(0, 0, 0, 0.55);
+color: white;
+font-size: 24px;
+cursor: pointer;
+}
+
+.workout-photo-title {
+position: absolute;
+left: 0;
+right: 0;
+bottom: 25px;
+text-align: center;
+text-shadow: 0 2px 15px #000;
+}
+
+.workout-photo-title span {
+display: block;
+margin-bottom: 5px;
+color: #c9aa75;
+font-size: 9px;
+font-weight: 800;
+letter-spacing: 3px;
+}
+
+.workout-photo-title strong {
+font-size: 24px;
+letter-spacing: 2px;
+}
+
+.workout-content {
+padding: 5px 22px 30px;
+text-align: center;
+}
+
+.workout-set-label {
+margin: 10px 0 5px;
+color: #c9aa75;
+font-size: 11px;
+font-weight: 900;
+letter-spacing: 3px;
+}
+
+.workout-content h1 {
+margin: 8px 0;
+font-size: 31px;
+}
+
+.rep-count {
+margin: 12px 0;
+font-size: 68px;
+font-weight: 800;
+line-height: 1;
+}
+
+.rep-count span {
+color: #686b67;
+font-size: 34px;
+}
+
+.workout-instruction {
+margin: 18px auto 22px;
+color: #8e918c;
+font-size: 12px;
+line-height: 1.7;
+}
+
+.workout-complete-button,
+.skip-rest-button {
+width: 100%;
+min-height: 58px;
+border: 0;
+border-radius: 13px;
+background: linear-gradient(135deg, #dcc18b, #ac874c);
+color: #10110f;
+font-size: 11px;
+font-weight: 900;
+letter-spacing: 1.4px;
+cursor: pointer;
+}
+
+.workout-complete-button:disabled {
+opacity: 0.55;
+}
+
+.rest-card {
+margin-top: 15px;
+padding: 25px 20px;
+border: 1px solid rgba(201, 170, 117, 0.28);
+border-radius: 18px;
+background: #101110;
+}
+
+.rest-label {
+margin: 0;
+color: #c9aa75;
+font-size: 10px;
+font-weight: 900;
+letter-spacing: 2px;
+}
+
+.rest-card h2 {
+margin: 9px 0 0;
+font-size: 20px;
+letter-spacing: 3px;
+}
+
+.rest-time {
+margin: 10px 0;
+font-size: 64px;
+font-weight: 800;
+font-variant-numeric: tabular-nums;
+}
+
+.rest-card p {
+margin: 0 0 20px;
+color: #8d908b;
+font-size: 11px;
+}
+
+.set-progress {
+display: flex;
+justify-content: space-between;
+position: relative;
+margin: 38px 10px 0;
+}
+
+.set-progress::before {
+content: "";
+position: absolute;
+top: 18px;
+left: 16%;
+right: 16%;
+height: 1px;
+background: #3a3c39;
+z-index: 0;
+}
+
+.set-step {
+position: relative;
+z-index: 1;
+width: 75px;
+color: #676a66;
+font-size: 8px;
+font-weight: 800;
+letter-spacing: 1px;
+}
+
+.set-step div {
+width: 38px;
+height: 38px;
+margin: 0 auto 8px;
+display: grid;
+place-items: center;
+border: 1px solid #565955;
+border-radius: 50%;
+background: #111210;
+font-size: 13px;
+}
+
+.set-step.active,
+.set-step.finished {
+color: #c9aa75;
+}
+
+.set-step.active div,
+.set-step.finished div {
+border-color: #c9aa75;
+background: #b9955d;
+color: #111;
+}
+
+.workout-motto {
+margin-top: 38px;
+color: #b69762;
+font-family: Georgia, "Times New Roman", serif;
+font-size: 10px;
+letter-spacing: 4px;
+}
