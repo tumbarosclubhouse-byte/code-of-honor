@@ -32,6 +32,12 @@ const cleanUsername = username.trim().toLowerCase();
 const { data, error } = await supabase.auth.signUp({
 email: email.trim(),
 password,
+options: {
+data: {
+display_name: displayName.trim(),
+username: cleanUsername,
+},
+},
 });
 
 if (error) {
@@ -40,22 +46,7 @@ setLoading(false);
 return;
 }
 
-if (data.user) {
-const { error: profileError } = await supabase
-.from("profiles")
-.insert({
-id: data.user.id,
-username: cleanUsername,
-display_name: displayName.trim(),
-is_active: true,
-});
 
-if (profileError) {
-setMessage(profileError.message);
-setLoading(false);
-return;
-}
-}
 
 if (!data.session) {
 setMessage(
@@ -203,14 +194,56 @@ const [myCompletions, setMyCompletions] = useState([]);
 const [editingBio, setEditingBio] = useState(false);
 const [bioDraft, setBioDraft] = useState("");
 const [savingBio, setSavingBio] = useState(false);
+const ensureProfile = async () => {
+const { data: existingProfile, error: checkError } = await supabase
+.from("profiles")
+.select("id")
+.eq("id", user.id)
+.maybeSingle();
 
+if (checkError) {
+console.error("Could not check profile:", checkError);
+return;
+}
+
+if (existingProfile) return;
+
+const metadata = user.user_metadata || {};
+
+const { error: insertError } = await supabase
+.from("profiles")
+.insert({
+id: user.id,
+username:
+metadata.username ||
+user.email?.split("@")[0]?.toLowerCase() ||
+`member-${user.id.slice(0, 6)}`,
+display_name:
+metadata.display_name ||
+user.email?.split("@")[0] ||
+"Member",
+is_active: true,
+});
+
+if (insertError) {
+console.error("Could not create profile:", insertError);
+}
+};
 
 useEffect(() => {
-loadGroup();
-loadTodayContent();
-  loadBuilders();
-  loadProfileData();
-resumeWorkout();
+const initializeApp = async () => {
+await ensureProfile();
+
+await Promise.all([
+loadGroup(),
+loadTodayContent(),
+loadBuilders(),
+loadProfileData(),
+resumeWorkout(),
+]);
+};
+
+initializeApp();
 }, []);
 useEffect(() => {
 if (!resting) return;
