@@ -1720,3 +1720,171 @@ justify-content: flex-start;
 text-align: left;
 }
 }
+/* DAY 31 FINALE */
+
+.finale-screen {
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 35px 22px;
+box-sizing: border-box;
+background:
+linear-gradient(
+rgba(4, 5, 5, 0.64),
+rgba(4, 5, 5, 0.94)
+),
+url("/IMG_8584.jpg");
+background-size: cover;
+background-position: center;
+color: #f4f1e9;
+}
+
+.finale-content {
+width: 100%;
+max-width: 440px;
+text-align: center;
+}
+
+.finale-shield {
+width: 68px;
+height: 68px;
+margin: 0 auto 19px;
+display: grid;
+place-items: center;
+border: 1px solid #b99a64;
+border-radius: 50%;
+color: #d3b474;
+background: rgba(185, 154, 100, 0.1);
+}
+
+.finale-eyebrow {
+margin: 0 0 10px;
+color: #c3a46b;
+font-size: 9px;
+font-weight: 900;
+letter-spacing: 4px;
+}
+
+.finale-content h1 {
+margin: 0;
+font-family: Georgia, "Times New Roman", serif;
+font-size: 33px;
+font-weight: 500;
+letter-spacing: 2px;
+}
+
+.finale-quote {
+margin: 13px auto 29px;
+color: #b5b3aa;
+font-family: Georgia, "Times New Roman", serif;
+font-size: 14px;
+font-style: italic;
+}
+
+.finale-total {
+padding: 25px 0;
+border-top: 1px solid rgba(201, 170, 117, 0.3);
+border-bottom: 1px solid rgba(201, 170, 117, 0.3);
+}
+
+.finale-total strong {
+display: block;
+color: #f2eee4;
+font-size: 72px;
+line-height: 0.95;
+}
+
+.finale-total span {
+display: block;
+margin-top: 10px;
+color: #c5a76d;
+font-size: 9px;
+font-weight: 900;
+letter-spacing: 3px;
+}
+
+.finale-stats {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+padding: 23px 0;
+border-bottom: 1px solid rgba(201, 170, 117, 0.25);
+}
+
+.finale-stats div {
+display: flex;
+flex-direction: column;
+gap: 6px;
+}
+
+.finale-stats div + div {
+border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.finale-stats strong {
+color: #d5b676;
+font-size: 21px;
+}
+
+.finale-stats span {
+color: #777a75;
+font-size: 7px;
+font-weight: 900;
+letter-spacing: 1.5px;
+}
+
+.finale-message {
+padding: 27px 0 23px;
+}
+
+.finale-message p {
+margin: 0 0 7px;
+color: #999b95;
+font-family: Georgia, "Times New Roman", serif;
+font-size: 13px;
+font-style: italic;
+}
+
+.finale-message > strong {
+display: block;
+color: #e2c783;
+font-size: 14px;
+letter-spacing: 2px;
+}
+
+.finale-builders-note {
+display: block;
+margin-top: 9px;
+color: #777a75;
+font-size: 8px;
+font-weight: 900;
+letter-spacing: 1.5px;
+}
+
+.finale-button {
+width: 100%;
+min-height: 57px;
+border: 0;
+border-radius: 12px;
+background: linear-gradient(135deg, #dcc18b, #ac874c);
+color: #10110f;
+font-size: 10px;
+font-weight: 900;
+letter-spacing: 2px;
+cursor: pointer;
+}
+
+.finale-date {
+margin: 23px 0 0;
+color: #777a75;
+font-size: 8px;
+letter-spacing: 2px;
+}
+
+.finale-motto {
+margin: 16px 0 0;
+color: #a98b59;
+font-family: Georgia, "Times New Roman", serif;
+font-size: 8px;
+letter-spacing: 4px;
+}
