@@ -179,6 +179,7 @@ const [todayCompletions, setTodayCompletions] = useState([]);
 const [currentSet, setCurrentSet] = useState(1);
 const [resting, setResting] = useState(false);
 const [restSeconds, setRestSeconds] = useState(300);
+  const [restEndsAt, setRestEndsAt] = useState(null);
 const [workoutStartedAt, setWorkoutStartedAt] = useState(null);
 const [savingWorkout, setSavingWorkout] = useState(false);
   const [workoutSuccess, setWorkoutSuccess] = useState(false);
@@ -246,20 +247,46 @@ resumeWorkout(),
 initializeApp();
 }, []);
 useEffect(() => {
-if (!resting) return;
+if (!resting || !restEndsAt) return;
 
-if (restSeconds <= 0) {
+const updateTimer = () => {
+const remaining = Math.max(
+0,
+Math.ceil((restEndsAt - Date.now()) / 1000)
+);
+
+setRestSeconds(remaining);
+
+if (remaining <= 0) {
 setResting(false);
+setRestEndsAt(null);
 setRestSeconds(300);
-return;
 }
+};
 
-const timer = setInterval(() => {
-setRestSeconds((seconds) => seconds - 1);
-}, 1000);
+updateTimer();
 
-return () => clearInterval(timer);
-}, [resting, restSeconds]);
+const timer = setInterval(updateTimer, 1000);
+
+const handleVisibilityChange = () => {
+if (document.visibilityState === "visible") {
+updateTimer();
+}
+};
+
+document.addEventListener(
+"visibilitychange",
+handleVisibilityChange
+);
+
+return () => {
+clearInterval(timer);
+document.removeEventListener(
+"visibilitychange",
+handleVisibilityChange
+);
+};
+}, [resting, restEndsAt]);
 
   const resumeWorkout = async () => {
 const today = new Date().toLocaleDateString("en-CA", {
@@ -307,9 +334,11 @@ Math.ceil(
 
 if (secondsLeft > 0) {
 setRestSeconds(secondsLeft);
+  setRestEndsAt(new Date(data.rest_until).getTime());
 setResting(true);
 } else {
 setRestSeconds(300);
+  setRestEndsAt(null);
 setResting(false);
 
 await saveWorkoutProgress({
@@ -520,6 +549,7 @@ return;
 
 setCurrentSet((set) => set + 1);
 setRestSeconds(300);
+setRestEndsAt(restUntil.getTime());
 setResting(true);
 setSavingWorkout(false);
 return;
@@ -533,6 +563,7 @@ await saveWorkoutProgress({
 rest_until: null,
 });
 
+  setRestEndsAt(null);
 setResting(false);
 setRestSeconds(300);
 };
@@ -580,6 +611,7 @@ setCurrentSet(1);
 setRestSeconds(300);
 setWorkoutStartedAt(null);
 setSavingWorkout(false);
+  setRestEndsAt(null);
 
 await loadGroup();
   await loadProfileData();
