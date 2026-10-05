@@ -537,11 +537,17 @@ if (newYorkNow >= challengeEnd) {
 alert("The October challenge has ended.");
 return;
 }
+const today = new Date().toLocaleDateString("en-CA", {
+timeZone: "America/New_York",
+});
+
 const alreadyCompleted = todayCompletions.some(
 (item) =>
 item.user_id === user.id &&
+item.completion_date === today &&
 item.workout_complete === true
 );
+
 
 if (alreadyCompleted) {
 alert("Today's 150 pushups are already complete.");
