@@ -1888,3 +1888,39 @@ font-family: Georgia, "Times New Roman", serif;
 font-size: 8px;
 letter-spacing: 4px;
 }
+/* 2:30 SET TIMER */
+
+.set-timer {
+margin: 20px auto;
+text-align: center;
+}
+
+.set-timer-label {
+display: block;
+margin-bottom: 5px;
+color: #b99a64;
+font-size: 8px;
+font-weight: 900;
+letter-spacing: 2px;
+}
+
+.set-timer strong {
+display: block;
+color: #f4f1e9;
+font-size: 46px;
+line-height: 1;
+font-variant-numeric: tabular-nums;
+}
+
+.set-timer-message {
+display: block;
+margin-top: 8px;
+color: #b99a64;
+font-size: 8px;
+font-weight: 900;
+letter-spacing: 2px;
+}
+
+.set-timer.expired strong {
+color: #b99a64;
+}
