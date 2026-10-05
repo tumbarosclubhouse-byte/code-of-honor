@@ -180,6 +180,8 @@ const [currentSet, setCurrentSet] = useState(1);
 const [resting, setResting] = useState(false);
 const [restSeconds, setRestSeconds] = useState(300);
   const [restEndsAt, setRestEndsAt] = useState(null);
+  const [setSeconds, setSetSeconds] = useState(150);
+const [setEndsAt, setSetEndsAt] = useState(null);
 const [workoutStartedAt, setWorkoutStartedAt] = useState(null);
 const [savingWorkout, setSavingWorkout] = useState(false);
   const [workoutSuccess, setWorkoutSuccess] = useState(false);
@@ -261,6 +263,8 @@ if (remaining <= 0) {
 setResting(false);
 setRestEndsAt(null);
 setRestSeconds(300);
+  setSetSeconds(150);
+setSetEndsAt(Date.now() + 150 * 1000);
 }
 };
 
@@ -287,6 +291,42 @@ handleVisibilityChange
 );
 };
 }, [resting, restEndsAt]);
+
+  useEffect(() => {
+if (!workoutOpen || resting || !setEndsAt) return;
+
+const updateSetTimer = () => {
+const remaining = Math.max(
+0,
+Math.ceil((setEndsAt - Date.now()) / 1000)
+);
+
+setSetSeconds(remaining);
+};
+
+updateSetTimer();
+
+const timer = setInterval(updateSetTimer, 1000);
+
+const handleVisibilityChange = () => {
+if (document.visibilityState === "visible") {
+updateSetTimer();
+}
+};
+
+document.addEventListener(
+"visibilitychange",
+handleVisibilityChange
+);
+
+return () => {
+clearInterval(timer);
+document.removeEventListener(
+"visibilitychange",
+handleVisibilityChange
+);
+};
+}, [workoutOpen, resting, setEndsAt]);
 
   const resumeWorkout = async () => {
 const today = new Date().toLocaleDateString("en-CA", {
@@ -510,6 +550,8 @@ return;
 setCurrentSet(1);
 setResting(false);
 setRestSeconds(300);
+  setSetSeconds(150);
+setSetEndsAt(Date.now() + 150 * 1000);
 setWorkoutStartedAt(Date.now());
 setWorkoutOpen(true);
 };
@@ -518,6 +560,8 @@ const finishSet = async () => {
 if (savingWorkout) return;
 
 setSavingWorkout(true);
+  setSetEndsAt(null);
+setSetSeconds(150);
 
 if (currentSet < 3) {
 const restUntil = new Date(Date.now() + 5 * 60 * 1000);
@@ -543,6 +587,8 @@ const saved = await saveWorkoutProgress(updates);
 
 if (!saved) {
 alert("Your set could not be saved. Please try again.");
+  setSetEndsAt(Date.now() + setSeconds * 1000);
+
 setSavingWorkout(false);
 return;
 }
@@ -566,6 +612,8 @@ rest_until: null,
   setRestEndsAt(null);
 setResting(false);
 setRestSeconds(300);
+  setSetSeconds(150);
+setSetEndsAt(Date.now() + 150 * 1000);
 };
 
 const finishWorkout = async () => {
@@ -1542,6 +1590,23 @@ SET {currentSet} OF 3
 <div className="rep-count">
 50
 <span> / 50</span>
+</div>
+
+  <div className={`set-timer ${setSeconds === 0 ? "expired" : ""}`}>
+<span className="set-timer-label">
+{setSeconds === 0 ? "TIME'S UP" : "TIME REMAINING"}
+</span>
+
+<strong>
+{Math.floor(setSeconds / 60)}:
+{String(setSeconds % 60).padStart(2, "0")}
+</strong>
+
+{setSeconds === 0 && (
+<span className="set-timer-message">
+FINISH YOUR 50
+</span>
+)}
 </div>
 
 <p className="workout-instruction">
