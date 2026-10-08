@@ -491,8 +491,13 @@ console.error("Could not load group history:", historyError);
 setGroupCompletions(historyData || []);
 }
 };
-const getToday = () => new Date().toISOString().slice(0, 10);
-
+const getToday = () =>
+new Intl.DateTimeFormat("en-CA", {
+timeZone: "America/New_York",
+year: "numeric",
+month: "2-digit",
+day: "2-digit",
+}).format(new Date());
 const saveWorkoutProgress = async (updates) => {
 const today = getToday();
 
