@@ -260,11 +260,7 @@ Math.ceil((restEndsAt - Date.now()) / 1000)
 setRestSeconds(remaining);
 
 if (remaining <= 0) {
-setResting(false);
-setRestEndsAt(null);
-setRestSeconds(300);
-  setSetSeconds(150);
-setSetEndsAt(Date.now() + 150 * 1000);
+setRestSeconds(0);
 }
 };
 
@@ -363,7 +359,17 @@ nextSet = 2;
 
 setCurrentSet(nextSet);
 setWorkoutOpen(true);
+if (data.set_ends_at) {
+const deadline = new Date(data.set_ends_at).getTime();
 
+setSetEndsAt(deadline);
+setSetSeconds(
+Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+);
+} else {
+setSetEndsAt(null);
+setSetSeconds(150);
+}
 if (data.rest_until) {
 const secondsLeft = Math.max(
 0,
@@ -454,8 +460,17 @@ console.error(
 "Could not load completion history:",
 completionError
 );
+alert(
+"Workout history could not be loaded. Your saved progress has not been reset. Please try refreshing."
+);
 } else {
 setMyCompletions(completionData || []);
+  console.log(
+"PROFILE HISTORY CHECK",
+user.id,
+completionData?.length,
+completionData
+);
 }
 };
 const loadGroup = async () => {
@@ -521,7 +536,7 @@ return false;
 
 return true;
 };
-const startWorkout = () => {
+const startWorkout = async () => {
 const now = new Date();
 
 const newYorkNow = new Date(
@@ -546,24 +561,49 @@ const today = new Date().toLocaleDateString("en-CA", {
 timeZone: "America/New_York",
 });
 
-const alreadyCompleted = todayCompletions.some(
-(item) =>
-item.user_id === user.id &&
-item.completion_date === today &&
-item.workout_complete === true
-);
+const { data: existingWorkout, error: checkError } = await supabase
+.from("daily_completions")
+.select("workout_complete, set_1, set_2, rest_until")
+.eq("user_id", user.id)
+.eq("completion_date", today)
+.maybeSingle();
 
+if (checkError) {
+alert("Could not verify today's workout. Please try again.");
+return;
+}
+
+const alreadyCompleted = existingWorkout?.workout_complete === true;
+if (existingWorkout && !alreadyCompleted) {
+await resumeWorkout();
+return;
+}
 
 if (alreadyCompleted) {
 alert("Today's 150 pushups are already complete.");
 return;
 }
+const startTime = Date.now();
+const deadline = startTime + 150 * 1000;
+const saved = await saveWorkoutProgress({
+  set_1: false,
+  set_2: false,
+  set_3: false,
+  workout_complete: false,
+  set_ends_at: new Date(deadline).toISOString(),
+  rest_until: null,
+});
+if (!saved) {
+  alert("Could not start workout. Please try again.");
+  return;
+}
 setCurrentSet(1);
 setResting(false);
 setRestSeconds(300);
-  setSetSeconds(150);
-setSetEndsAt(Date.now() + 150 * 1000);
-setWorkoutStartedAt(Date.now());
+setRestEndsAt(null);
+setSetSeconds(150);
+setSetEndsAt(deadline);
+setWorkoutStartedAt(startTime);
 setWorkoutOpen(true);
 };
 
@@ -585,6 +625,7 @@ set_2: false,
 set_3: false,
 workout_complete: false,
 rest_until: restUntil.toISOString(),
+  set_ends_at: null,
 }
 : {
 set_1: true,
@@ -592,6 +633,7 @@ set_2: true,
 set_3: false,
 workout_complete: false,
 rest_until: restUntil.toISOString(),
+    set_ends_at: null,
 };
 
 const saved = await saveWorkoutProgress(updates);
@@ -612,23 +654,37 @@ setSavingWorkout(false);
 return;
 }
 
-await finishWorkout();
+await finishWorkout(true);
 };
 
 const skipRest = async () => {
-await saveWorkoutProgress({
+if (savingWorkout) return;
+
+setSavingWorkout(true);
+
+const deadline = Date.now() + 150 * 1000;
+
+const saved = await saveWorkoutProgress({
 rest_until: null,
+set_ends_at: new Date(deadline).toISOString(),
 });
 
-  setRestEndsAt(null);
+if (!saved) {
+alert("Could not start the next set. Please try again.");
+setSavingWorkout(false);
+return;
+}
+
+setRestEndsAt(null);
 setResting(false);
 setRestSeconds(300);
-  setSetSeconds(150);
-setSetEndsAt(Date.now() + 150 * 1000);
+setSetSeconds(150);
+setSetEndsAt(deadline);
+setSavingWorkout(false);
 };
 
-const finishWorkout = async () => {
-if (savingWorkout) return;
+const finishWorkout = async (fromFinishSet = false) => {
+if (savingWorkout && !fromFinishSet) return;
 
 setSavingWorkout(true);
 
@@ -653,6 +709,7 @@ completed_at: new Date().toISOString(),
 workout_seconds: workoutSeconds,
 eliminated: false,
   rest_until: null,
+  set_ends_at: null,
 },
 {
 onConflict: "user_id,completion_date",
@@ -827,46 +884,16 @@ groupCompletions
 .filter(
 (item) =>
 item.user_id === profileId &&
-item.workout_complete === true
+item.workout_complete === true &&
+item.completion_date >= "2026-10-01" &&
+item.completion_date <= "2026-10-31"
 )
 .map((item) => item.completion_date)
 );
 
-if (completedDates.size === 0) return 0;
-
-const todayString = new Date().toLocaleDateString("en-CA", {
-timeZone: "America/New_York",
-});
-
-// No official streaks before October 1.
-if (todayString < "2026-10-01") return 0;
-
-let cursor = new Date(`${todayString}T12:00:00`);
-const todayComplete = completedDates.has(todayString);
-
-// During the day, not completing today's workout yet
-// should NOT destroy yesterday's existing streak.
-if (!todayComplete) {
-cursor.setDate(cursor.getDate() - 1);
-}
-
-let streak = 0;
-
-while (true) {
-const year = cursor.getFullYear();
-const month = String(cursor.getMonth() + 1).padStart(2, "0");
-const day = String(cursor.getDate()).padStart(2, "0");
-const dateString = `${year}-${month}-${day}`;
-
-if (dateString < "2026-10-01") break;
-if (!completedDates.has(dateString)) break;
-
-streak += 1;
-cursor.setDate(cursor.getDate() - 1);
-}
-
-return streak;
+return completedDates.size;
 };
+
   const getTodayCompletion = (profileId) => {
 return todayCompletions.find(
 (item) =>
@@ -1038,18 +1065,7 @@ return parts ? Number(parts[2]) : null;
 
 const sortedDays = [...completedDayNumbers].sort((a, b) => a - b);
 
-let currentStreak = 0;
-
-for (let i = sortedDays.length - 1; i >= 0; i--) {
-if (
-i === sortedDays.length - 1 ||
-sortedDays[i] === sortedDays[i + 1] - 1
-) {
-currentStreak += 1;
-} else {
-break;
-}
-}
+const currentStreak = getMemberStreak(user.id);
 
 const now = new Date();
 
@@ -1817,7 +1833,7 @@ profile.display_name?.charAt(0)?.toUpperCase() || "?"
 <span>@{profile.username}</span>
 
 <div className="member-streak">
-🔥 {streak} {streak === 1 ? "DAY" : "DAYS"} STREAK
+✓ {streak} {streak === 1 ? "DAY" : "DAYS"} COMPLETED
 </div>
 </div>
 
