@@ -884,46 +884,16 @@ groupCompletions
 .filter(
 (item) =>
 item.user_id === profileId &&
-item.workout_complete === true
+item.workout_complete === true &&
+item.completion_date >= "2026-10-01" &&
+item.completion_date <= "2026-10-31"
 )
 .map((item) => item.completion_date)
 );
 
-if (completedDates.size === 0) return 0;
-
-const todayString = new Date().toLocaleDateString("en-CA", {
-timeZone: "America/New_York",
-});
-
-// No official streaks before October 1.
-if (todayString < "2026-10-01") return 0;
-
-let cursor = new Date(`${todayString}T12:00:00`);
-const todayComplete = completedDates.has(todayString);
-
-// During the day, not completing today's workout yet
-// should NOT destroy yesterday's existing streak.
-if (!todayComplete) {
-cursor.setDate(cursor.getDate() - 1);
-}
-
-let streak = 0;
-
-while (true) {
-const year = cursor.getFullYear();
-const month = String(cursor.getMonth() + 1).padStart(2, "0");
-const day = String(cursor.getDate()).padStart(2, "0");
-const dateString = `${year}-${month}-${day}`;
-
-if (dateString < "2026-10-01") break;
-if (!completedDates.has(dateString)) break;
-
-streak += 1;
-cursor.setDate(cursor.getDate() - 1);
-}
-
-return streak;
+return completedDates.size;
 };
+
   const getTodayCompletion = (profileId) => {
 return todayCompletions.find(
 (item) =>
@@ -1863,7 +1833,7 @@ profile.display_name?.charAt(0)?.toUpperCase() || "?"
 <span>@{profile.username}</span>
 
 <div className="member-streak">
-🔥 {streak} {streak === 1 ? "DAY" : "DAYS"} STREAK
+✓ {streak} {streak === 1 ? "DAY" : "DAYS"} COMPLETED
 </div>
 </div>
 
