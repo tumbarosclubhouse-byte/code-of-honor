@@ -248,6 +248,36 @@ resumeWorkout(),
 
 initializeApp();
 }, []);
+  useEffect(() => {
+const refreshWorkoutData = () => {
+if (document.visibilityState === "visible") {
+loadGroup();
+loadProfileData();
+}
+};
+
+document.addEventListener(
+"visibilitychange",
+refreshWorkoutData
+);
+
+window.addEventListener(
+"focus",
+refreshWorkoutData
+);
+
+return () => {
+document.removeEventListener(
+"visibilitychange",
+refreshWorkoutData
+);
+
+window.removeEventListener(
+"focus",
+refreshWorkoutData
+);
+};
+}, [user.id]);
 useEffect(() => {
 if (!resting || !restEndsAt) return;
 
@@ -1594,7 +1624,12 @@ return (
 <div className="workout-photo">
 <button
 className="workout-back"
-onClick={() => setWorkoutOpen(false)}
+onClick={() => {
+if (!savingWorkout) {
+setWorkoutOpen(false);
+}
+}}
+disabled={savingWorkout}
 >
 ←
 </button>
@@ -1673,8 +1708,11 @@ Take five minutes to recover before Set {currentSet}.
 <button
 className="skip-rest-button"
 onClick={skipRest}
+disabled={savingWorkout}
 >
-START SET {currentSet} EARLY
+{savingWorkout
+? "SAVING..."
+: `START SET ${currentSet} EARLY`}
 </button>
 </div>
 )}
